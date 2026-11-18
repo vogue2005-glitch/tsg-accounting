@@ -2,7 +2,7 @@
 
 使い方: python3 -m tsg.generate data/2026-11.csv
 CSV列: 日付,取引先,現場,作業員,昼夜,休日,距離km,ETC,駐車場,燃料,宿泊,残業h,備考[,請求単価]
-  請求単価: 中川案件など案件ごとに単価が違う場合に指定（空欄=ルール単価）
+  請求単価: 例 7500税込 / 20000（税抜）。中川案件など案件ごとに単価が違う場合に指定（空欄=ルール単価）
   昼夜: 夜/空欄(=昼。夜勤の記載がなければ昼)   休日: 空欄=自動判定(土日祝) / 1=休日 / 0=平日
   距離km: 運転者の行のみ記載（空欄=乗り合い→0円）
 """
@@ -66,7 +66,8 @@ def load(path):
                              km=num(r.get("距離km")), etc=num(r.get("ETC")),
                              parking=num(r.get("駐車場")), fuel=num(r.get("燃料")),
                              lodging=num(r.get("宿泊")), ot=num(r.get("残業h")),
-                             bill_rate=num(r.get("請求単価")),
+                             bill_rate=num((r.get("請求単価") or "").replace("税込", "").replace("税抜", "")),
+                             bill_incl="込" in (r.get("請求単価") or ""),
                              memo=(r.get("備考") or "").strip()))
     return rows, notes
 
@@ -78,11 +79,13 @@ def build_invoices(rows, notes):
         c = r["client"]
         rate, incl, ot_rate, travel, lab = R.bill_rule(c, r["site"], r["night"], r["holiday"],
                                                        [] if r["bill_rate"] else notes)
-        if r["bill_rate"]:  # 個別指定単価（中川案件など）を優先
+        if r["bill_rate"]:  # 個別指定単価（中川案件など）を優先。「7500税込」で税込指定
             rate = int(r["bill_rate"])
+            incl = r["bill_incl"]
         i = inv.setdefault(c, dict(lines=defaultdict(lambda: [0, 0]), ot=defaultdict(float),
                                    km=0, etc=0, receipt=0, lodging=0, incl=incl, lab=lab,
                                    travel=travel, ot_rate=ot_rate))
+        i["incl"] = incl
         label = "夜勤" if r["night"] else ("休日" if r["holiday"] and rate >= 25_000 and c not in ("メンテック", "アスカ技建") else "")
         i["lines"][(r["date"], r["site"], label, rate)][0] += 1
         if r["ot"]:
