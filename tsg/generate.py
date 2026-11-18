@@ -1,7 +1,8 @@
 """終了報告CSV → 請求書PDF / 給料明細PDF / 月次サマリーPDF
 
 使い方: python3 -m tsg.generate data/2026-11.csv
-CSV列: 日付,取引先,現場,作業員,昼夜,休日,距離km,ETC,駐車場,燃料,宿泊,残業h,備考[,請求単価]
+CSV列: 日付,取引先,現場,作業員,昼夜,休日,距離km,ETC,駐車場,燃料,宿泊,残業h,備考[,請求単価,本人立替]
+  本人立替: 作業員本人が立て替えたETC等（給料で精算。ETC列にも同額を入れて請求する）
   請求単価: 例 7500税込 / 20000（税抜）。中川案件など案件ごとに単価が違う場合に指定（空欄=ルール単価）
   昼夜: 夜/空欄(=昼。夜勤の記載がなければ昼)   休日: 空欄=自動判定(土日祝) / 1=休日 / 0=平日
   距離km: 運転者の行のみ記載（空欄=乗り合い→0円）
@@ -68,6 +69,7 @@ def load(path):
                              lodging=num(r.get("宿泊")), ot=num(r.get("残業h")),
                              bill_rate=num((r.get("請求単価") or "").replace("税込", "").replace("税抜", "")),
                              bill_incl="込" in (r.get("請求単価") or ""),
+                             reimb=num(r.get("本人立替")),
                              memo=(r.get("備考") or "").strip()))
     for r in rows:  # 備考に「後日」「要確認」があれば確認事項に残す
         if "後日" in r["memo"] or "要確認" in r["memo"]:
@@ -204,7 +206,8 @@ def build_payroll(rows, notes):
         if w == "木ノ下":
             continue
         wage, incl = R.wage_rule(w, r["client"], r["night"], notes)
-        p = pay.setdefault(w, dict(days=[], wage=0, km=0, ot=0))
+        p = pay.setdefault(w, dict(days=[], wage=0, km=0, ot=0, reimb=0))
+        p["reimb"] += r["reimb"]
         trav = r["km"] * R.WAGE_KM
         if r["ot"]:
             notes.append(f"{w} {r['date']:%m/%d}: 残業{r['ot']}h → 給料側の残業単価ルールなし・未加算（要確認）")
@@ -215,7 +218,7 @@ def build_payroll(rows, notes):
     for w, p in pay.items():
         p["tax"] = math.floor(p["wage"] * R.TAX) if w in R.TAXED_WORKERS else 0
         p["trav"] = p["km"] * R.WAGE_KM
-        p["total"] = p["wage"] + p["tax"] + p["trav"]
+        p["total"] = p["wage"] + p["tax"] + p["trav"] + p["reimb"]
         p["gaichu"] = w in R.NAKAGAWA_GUMI
     return pay
 
@@ -241,12 +244,16 @@ def payroll_pdf(path, pay, ym, kinoshita_days):
         sm = [["日当合計", yen(p["wage"])]]
         if p["tax"]:
             sm.append(["消費税（10%）", yen(p["tax"])])
-        sm += [[f"交通費（{p['km']:g}km × {R.WAGE_KM}円）", yen(p["trav"])], ["支給合計", yen(p["total"])]]
+        sm.append([f"交通費（{p['km']:g}km × {R.WAGE_KM}円）", yen(p["trav"])])
+        if p["reimb"]:
+            sm.append(["立替精算（ETC等）", yen(p["reimb"])])
+        sm.append(["支給合計", yen(p["total"])])
         st = Table(sm, colWidths=[60 * mm, 40 * mm], hAlign="RIGHT")
         st.setStyle(TableStyle([("FONT", (0, 0), (-1, -1), F, 10), ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
                                 ("ALIGN", (1, 0), (1, -1), "RIGHT"), ("FONT", (0, -1), (-1, -1), F, 12),
                                 ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#e8eef7"))]))
-        s += [tb, Spacer(0, 4 * mm), st, Paragraph("※ETCは木ノ下カード精算のため含みません。", ST["s"])]
+        s += [tb, Spacer(0, 4 * mm), st,
+              Paragraph("※ETCは木ノ下カード精算のため含みません（本人立替分は立替精算に計上）。", ST["s"])]
         if idx < len(pay) - 1:
             s.append(PageBreak())
     doc.build(s)
@@ -258,7 +265,8 @@ def summary(rows, inv, pay, notes, ym, out):
     sales_in = sum(i["total"] for i in inv.values())
     wages = sum(p["wage"] + p["tax"] for p in pay.values())
     trav = sum(p["trav"] for p in pay.values())
-    etc = sum(r["etc"] for r in rows)
+    etc = sum(r["etc"] for r in rows)  # 本人立替分も含む（原価として1回だけ計上）
+    reimb = sum(p["reimb"] for p in pay.values())
     other = sum(r["parking"] + r["fuel"] + r["lodging"] for r in rows)
     labor_total = wages + trav + R.OFFICER_PAY
     cost = labor_total + etc + other
@@ -281,17 +289,17 @@ def summary(rows, inv, pay, notes, ym, out):
     d.append(["合計", sum(x[1] for x in d[1:]), f"{int(sales_ex):,}", f"{int(sales_in - sales_ex):,}", f"{int(sales_in):,}"])
     t = Table(d, colWidths=[50 * mm, 20 * mm, 35 * mm, 30 * mm, 35 * mm]); t.setStyle(ts)
     s += [t, Spacer(0, 5 * mm), Paragraph("2. 支払人件費一覧", ST["h"])]
-    d = [["作業員", "稼働日", "日当(+税)", "交通費", "支給合計"]]
+    d = [["作業員", "稼働日", "日当(+税)", "交通費・立替", "支給合計"]]
     d.append(["木ノ下（役員報酬）", sum(1 for r in rows if r["worker"] == "木ノ下"), f"{R.OFFICER_PAY:,}", "0", f"{R.OFFICER_PAY:,}"])
     for w, p in pay.items():
         d.append([w + ("（外注）" if p["gaichu"] else ""), len(p["days"]), f"{p['wage'] + p['tax']:,}",
-                  f"{int(p['trav']):,}", f"{int(p['total']):,}"])
-    d.append(["人件費合計", "", f"{wages + R.OFFICER_PAY:,}", f"{int(trav):,}", f"{int(labor_total):,}"])
+                  f"{int(p['trav'] + p['reimb']):,}", f"{int(p['total']):,}"])
+    d.append(["支払合計", "", f"{wages + R.OFFICER_PAY:,}", f"{int(trav + reimb):,}", f"{int(labor_total + reimb):,}"])
     t = Table(d, colWidths=[50 * mm, 20 * mm, 35 * mm, 30 * mm, 35 * mm]); t.setStyle(ts)
     s += [t, Spacer(0, 5 * mm), Paragraph("3. 損益", ST["h"])]
     d = [["項目", "金額"], ["売上（税抜）", f"{int(sales_ex):,}"],
          ["人件費（役員報酬・作業員交通費込）", f"{int(labor_total):,}"],
-         ["ETC（木ノ下カード）", f"{int(etc):,}"], ["駐車場・燃料・宿泊等", f"{int(other):,}"],
+         [f"ETC（うち本人立替 {int(reimb):,}）", f"{int(etc):,}"], ["駐車場・燃料・宿泊等", f"{int(other):,}"],
          ["原価合計", f"{int(cost):,}"], ["粗利", f"{int(gp):,}"], ["粗利率", f"{rate:.1f}%"]]
     t = Table(d, colWidths=[90 * mm, 50 * mm]); t.setStyle(ts)
     s += [t, Spacer(0, 5 * mm), Paragraph("4. 確認事項（仮計上）", ST["h"])]
