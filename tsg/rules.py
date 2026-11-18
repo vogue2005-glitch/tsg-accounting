@@ -22,9 +22,12 @@ from pathlib import Path as _P
 LIST_PATH = _P(__file__).resolve().parent.parent / "data" / "協力業者一覧.csv"
 ADDRESSES = {}
 CLIENT_LIST = set()
+OFFICIAL = {}  # 請求書の宛名（正式名称）
 with open(LIST_PATH, encoding="utf-8-sig") as _f:
     for _r in _csv.DictReader(_f):
         CLIENT_LIST.add(_r["取引先名"])
+        if _r.get("正式名称"):
+            OFFICIAL[_r["取引先名"]] = _r["正式名称"]
         if _r["住所"]:
             ADDRESSES[_r["取引先名"]] = (f"〒{_r['郵便番号']} " if _r["郵便番号"] else "") + _r["住所"]
 

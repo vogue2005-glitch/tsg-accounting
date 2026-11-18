@@ -155,7 +155,7 @@ def invoice_pdf(path, client, i, ym, inv_no, issue, due):
                             topMargin=15 * mm, bottomMargin=15 * mm)
     addr = R.ADDRESSES.get(client, "（住所：過去スレ参照・要確認）")
     s = [Paragraph("請 求 書", ST["title"]), Spacer(0, 6 * mm)]
-    left = [Paragraph(addr, ST["n"]), Paragraph(f"<font size=14>{client}　御中</font>", ST["h"]),
+    left = [Paragraph(addr, ST["n"]), Paragraph(f"<font size=14>{R.OFFICIAL.get(client, client)}　御中</font>", ST["h"]),
             Spacer(0, 3 * mm), Paragraph(f"件名：{ym.year}年{ym.month}月分 作業代", ST["n"])]
     right = [Paragraph(f"請求番号：{inv_no}", ST["r"]), Paragraph(f"請求日：{issue:%Y年%m月%d日}", ST["r"]),
              Spacer(0, 2 * mm), Paragraph(R.ISSUER["name"], ST["r"]), Paragraph(R.ISSUER["rep"], ST["r"]),
