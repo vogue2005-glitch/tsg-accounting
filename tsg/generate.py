@@ -1,7 +1,8 @@
 """終了報告CSV → 請求書PDF / 給料明細PDF / 月次サマリーPDF
 
 使い方: python3 -m tsg.generate data/2026-11.csv
-CSV列: 日付,取引先,現場,作業員,昼夜,休日,距離km,ETC,駐車場,燃料,宿泊,残業h,備考
+CSV列: 日付,取引先,現場,作業員,昼夜,休日,距離km,ETC,駐車場,燃料,宿泊,残業h,備考[,請求単価]
+  請求単価: 中川案件など案件ごとに単価が違う場合に指定（空欄=ルール単価）
   昼夜: 昼/夜   休日: 空欄=自動判定(土日祝) / 1=休日 / 0=平日
   距離km: 運転者の行のみ記載（空欄=乗り合い→0円）
 """
@@ -66,6 +67,7 @@ def load(path):
                              km=num(r.get("距離km")), etc=num(r.get("ETC")),
                              parking=num(r.get("駐車場")), fuel=num(r.get("燃料")),
                              lodging=num(r.get("宿泊")), ot=num(r.get("残業h")),
+                             bill_rate=num(r.get("請求単価")),
                              memo=(r.get("備考") or "").strip()))
     return rows, notes
 
@@ -75,7 +77,10 @@ def build_invoices(rows, notes):
     inv = OrderedDict()
     for r in sorted(rows, key=lambda x: (x["client"], x["date"], x["site"])):
         c = r["client"]
-        rate, incl, ot_rate, travel, lab = R.bill_rule(c, r["site"], r["night"], r["holiday"], notes)
+        rate, incl, ot_rate, travel, lab = R.bill_rule(c, r["site"], r["night"], r["holiday"],
+                                                       [] if r["bill_rate"] else notes)
+        if r["bill_rate"]:  # 個別指定単価（中川案件など）を優先
+            rate = int(r["bill_rate"])
         i = inv.setdefault(c, dict(lines=defaultdict(lambda: [0, 0]), ot=defaultdict(float),
                                    km=0, etc=0, receipt=0, lodging=0, incl=incl, lab=lab,
                                    travel=travel, ot_rate=ot_rate))
