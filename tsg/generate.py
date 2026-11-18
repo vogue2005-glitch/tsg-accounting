@@ -3,7 +3,7 @@
 使い方: python3 -m tsg.generate data/2026-11.csv
 CSV列: 日付,取引先,現場,作業員,昼夜,休日,距離km,ETC,駐車場,燃料,宿泊,残業h,備考[,請求単価]
   請求単価: 中川案件など案件ごとに単価が違う場合に指定（空欄=ルール単価）
-  昼夜: 昼/夜   休日: 空欄=自動判定(土日祝) / 1=休日 / 0=平日
+  昼夜: 夜/空欄(=昼。夜勤の記載がなければ昼)   休日: 空欄=自動判定(土日祝) / 1=休日 / 0=平日
   距離km: 運転者の行のみ記載（空欄=乗り合い→0円）
 """
 import calendar
@@ -57,8 +57,7 @@ def load(path):
             worker = r["作業員"].strip()
             worker = R.WORKER_ALIAS.get(worker, worker)
             shift = (r.get("昼夜") or "").strip()
-            if shift not in ("昼", "夜"):
-                notes.append(f"{d:%m/%d} {client} {worker}: 昼夜不明 → 昼で仮計上")
+            if shift not in ("昼", "夜"):  # 終了報告に「夜勤」の記載がなければ昼
                 shift = "昼"
             hol = (r.get("休日") or "").strip()
             holiday = R.is_holiday(d) if hol == "" else hol == "1"
