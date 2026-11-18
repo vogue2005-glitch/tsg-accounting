@@ -270,7 +270,7 @@ def summary(rows, inv, pay, notes, ym, out):
         d.append([c, n, f"{int(i['sales_ex']):,}", f"{i['tax']:,}", f"{int(i['total']):,}"])
     d.append(["合計", sum(x[1] for x in d[1:]), f"{int(sales_ex):,}", f"{int(sales_in - sales_ex):,}", f"{int(sales_in):,}"])
     t = Table(d, colWidths=[50 * mm, 20 * mm, 35 * mm, 30 * mm, 35 * mm]); t.setStyle(ts)
-    s += [t, Spacer(0, 5 * mm), Paragraph("2. 人件費", ST["h"])]
+    s += [t, Spacer(0, 5 * mm), Paragraph("2. 支払人件費一覧", ST["h"])]
     d = [["作業員", "稼働日", "日当(+税)", "交通費", "支給合計"]]
     d.append(["木ノ下（役員報酬）", sum(1 for r in rows if r["worker"] == "木ノ下"), f"{R.OFFICER_PAY:,}", "0", f"{R.OFFICER_PAY:,}"])
     for w, p in pay.items():
@@ -314,6 +314,12 @@ def main(csv_path, ym_str=None):
     pay = build_payroll(rows, notes)
     payroll_pdf(out / f"給料明細_{ym:%Y%m}.pdf", pay, ym, sum(1 for r in rows if r["worker"] == "木ノ下"))
     print(summary(rows, inv, pay, notes, ym, out))
+    # 月次まとめ: サマリー（売上・支払人件費・確認事項）→ 請求書 → 給料明細 を1冊に
+    from pypdf import PdfWriter
+    w = PdfWriter()
+    for f in [out / "月次サマリー.pdf"] + sorted(out.glob("請求書_*.pdf")) + [out / f"給料明細_{ym:%Y%m}.pdf"]:
+        w.append(str(f))
+    w.write(str(out / f"月次まとめ_{ym:%Y%m}.pdf"))
     print(f"\n出力先: {out}")
 
 
