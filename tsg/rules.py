@@ -26,7 +26,7 @@ ADDRESSES = {
 CLIENT_ALIAS = {
     "三共": "三共実業", "三共実業": "三共実業",
     "渡辺": "渡辺", "佐野": "佐野設備", "佐野設備": "佐野設備",
-    "メンテック": "メンテック", "祭": "祭工業", "祭工業": "祭工業",
+    "メンテック": "メンテック", "源馬": "源馬機設", "源馬機設": "源馬機設", "祭": "祭工業", "祭工業": "祭工業",
     "アスカ": "アスカ技建", "アスカ技建": "アスカ技建",
     "ユニットM": "ユニットM", "ユニットＭ": "ユニットM",
     "中川": "中川案件", "中川案件": "中川案件",
@@ -70,6 +70,11 @@ def bill_rule(client, site, night, holiday, notes):
         if "横浜" in site:
             return 25_000, False, ot, "km", 0
         notes.append(f"祭工業 夜勤（横浜以外: {site}）→ 通常夜勤30,000円で仮計上")
+    if client == "源馬機設":  # 20,000＋税、夜勤1.5倍
+        if holiday and not night:
+            notes.append("源馬機設 休日昼の単価未確認 → 基本ルール30,000円で仮計上")
+            return 30_000, False, 30_000 / 8 * 1.25, "km", 0
+        return (30_000 if night else 20_000), False, 30_000 / 8 * 1.25, "km", 0
     rate = 30_000 if (night or holiday) else 20_000
     lab = 0.10 if client == "佐野設備" else 0
     if client not in ("三共実業", "渡辺", "佐野設備", "祭工業"):
