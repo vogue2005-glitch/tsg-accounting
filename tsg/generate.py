@@ -69,6 +69,9 @@ def load(path):
                              bill_rate=num((r.get("請求単価") or "").replace("税込", "").replace("税抜", "")),
                              bill_incl="込" in (r.get("請求単価") or ""),
                              memo=(r.get("備考") or "").strip()))
+    for r in rows:  # 備考に「後日」「要確認」があれば確認事項に残す
+        if "後日" in r["memo"] or "要確認" in r["memo"]:
+            notes.append(f"{r['date']:%m/%d} {r['client']} {r['worker']}: {r['memo']}")
     return rows, notes
 
 
