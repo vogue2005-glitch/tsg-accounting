@@ -327,6 +327,11 @@ def main(csv_path, ym_str=None):
     out = Path("out") / f"{ym:%Y-%m}"
     out.mkdir(parents=True, exist_ok=True)
     inv = build_invoices(rows, notes)
+    for c in inv:
+        if c not in R.CLIENT_LIST:
+            notes.append(f"取引先「{c}」が協力業者一覧に未登録 → data/協力業者一覧.csv に追加すること")
+        elif c not in R.ADDRESSES:
+            notes.append(f"取引先「{c}」の住所が協力業者一覧に未登録")
     for n, (c, i) in enumerate(inv.items(), 1):
         invoice_pdf(out / f"請求書_{c}_{ym:%Y%m}.pdf", c, i, ym, f"TSG-{ym:%Y%m}-{n:02d}", issue, due)
     pay = build_payroll(rows, notes)

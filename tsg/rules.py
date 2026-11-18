@@ -16,12 +16,17 @@ BILL_KM = 30      # 請求 交通費 円/km
 WAGE_KM = 20      # 給料 交通費 円/km
 OFFICER_PAY = 150_000  # 木ノ下 役員報酬
 
-# 宛先（不明分は過去スレ参照 → 判明したら追記）
-ADDRESSES = {
-    "メンテック": "〒428-0013 静岡県島田市金谷東1丁目687-63",
-    "三共実業": "〒470-0131 愛知県日進市岩崎町阿良池62-14",
-    "源馬総合機設": "静岡県浜松市中央区有玉北町1873",  # 郵便番号未確認
-}
+# 宛先: data/協力業者一覧.csv から読み込む（元請け情報が判明したら一覧に追記）
+import csv as _csv
+from pathlib import Path as _P
+LIST_PATH = _P(__file__).resolve().parent.parent / "data" / "協力業者一覧.csv"
+ADDRESSES = {}
+CLIENT_LIST = set()
+with open(LIST_PATH, encoding="utf-8-sig") as _f:
+    for _r in _csv.DictReader(_f):
+        CLIENT_LIST.add(_r["取引先名"])
+        if _r["住所"]:
+            ADDRESSES[_r["取引先名"]] = (f"〒{_r['郵便番号']} " if _r["郵便番号"] else "") + _r["住所"]
 
 # 取引先名の表記ゆれ → 正式キー
 CLIENT_ALIAS = {
