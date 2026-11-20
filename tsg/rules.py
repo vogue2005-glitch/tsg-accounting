@@ -133,8 +133,8 @@ def wage_rule(worker, client, night, notes):
         return 12_000, True
     if client == "アスカ技建":
         return (20_000 if worker == "黒澤" else 19_000), False
-    if worker in NAKAGAWA_GUMI and client == "長尾工業":  # 中川組 長尾工業 昼17,000／夜22,000（税込）
-        return (22_000 if night else 17_000), True
+    if worker in NAKAGAWA_GUMI and client == "長尾工業":  # 中川組 長尾工業 昼17,000／夜1.5倍=25,500（税込）
+        return (25_500 if night else 17_000), True
     if (worker, client) in WORKER_CLIENT_WAGE:
         day, nt = WORKER_CLIENT_WAGE[(worker, client)]
         if night and nt is None:
