@@ -102,6 +102,8 @@ def build_invoices(rows, notes):
                 i["ot"][(r["date"], r["site"])] += r["ot"]
             else:
                 notes.append(f"{r['date']:%m/%d} {c}: 残業{r['ot']}h → 請求しないルールのため除外")
+        if "交通費込" in r["memo"]:  # 単価に交通費込み → 交通費・ETCは請求しない
+            travel = "none_incl"
         if travel == "km":
             i["km"] += r["km"]
             i["etc"] += r["etc"]
@@ -110,7 +112,7 @@ def build_invoices(rows, notes):
                 notes.append(f"{r['date']:%m/%d} {c}: 駐車場/燃料 実費を立替として請求計上（要確認）")
         elif travel == "receipt":
             i["receipt"] += r["etc"] + r["parking"] + r["fuel"]
-        else:
+        elif travel == "none":
             if r["km"] or r["etc"]:
                 notes.append(f"{r['date']:%m/%d} {c}: 交通費/ETCは請求しないルールのため除外")
         if r["lodging"]:
