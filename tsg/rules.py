@@ -79,6 +79,10 @@ def bill_rule(client, site, night, holiday, notes):
         if "横浜" in site:
             return 25_000, False, ot, "km", 0
         notes.append(f"祭工業 夜勤（横浜以外: {site}）→ 通常夜勤30,000円で仮計上")
+    if client == "長尾工業":  # 昼21,000／夜勤30,000（＋税）
+        if holiday and not night:
+            notes.append("長尾工業 休日昼の単価未確認 → 昼21,000円で仮計上")
+        return (30_000 if night else 21_000), False, 30_000 / 8 * 1.25, "km", 0
     if client == "源馬総合機設":  # 20,000＋税、夜勤1.5倍
         if holiday and not night:
             notes.append("源馬総合機設 休日昼の単価未確認 → 基本ルール30,000円で仮計上")
