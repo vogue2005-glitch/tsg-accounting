@@ -110,6 +110,7 @@ WAGE_TABLE = {
 # 作業員×取引先の個別単価（昼, 夜）。表より優先
 WORKER_CLIENT_WAGE = {
     ("黒澤", "源馬総合機設"): (16_000, None),
+    ("たかし", "長尾工業"): (14_000, 21_000),
 }
 FLAT_WAGE = {  # 取引先によらない（昼, 夜）
     "近藤": (15_000, 22_500), "原": (18_000, 27_000),
@@ -132,6 +133,8 @@ def wage_rule(worker, client, night, notes):
         return 12_000, True
     if client == "アスカ技建":
         return (20_000 if worker == "黒澤" else 19_000), False
+    if worker in NAKAGAWA_GUMI and client == "長尾工業":  # 中川組 長尾工業 昼17,000／夜22,000（税込）
+        return (22_000 if night else 17_000), True
     if (worker, client) in WORKER_CLIENT_WAGE:
         day, nt = WORKER_CLIENT_WAGE[(worker, client)]
         if night and nt is None:
