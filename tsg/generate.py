@@ -90,7 +90,11 @@ def build_invoices(rows, notes):
         i = inv.setdefault(c, dict(lines=defaultdict(lambda: [0, 0]), ot=defaultdict(float),
                                    km=0, etc=0, receipt=0, lodging=0, incl=incl, lab=lab,
                                    travel=travel, ot_rate=ot_rate))
-        i["incl"] = incl
+        if rate:  # 単価未確認(0円)の行で税込/税抜の扱いを上書きしない
+            i.setdefault("incl_seen", set()).add(incl)
+            i["incl"] = incl
+            if len(i["incl_seen"]) > 1:
+                notes.append(f"{c}: 税込単価と税抜単価が同じ月に混在 → 請求書を分けるか要確認")
         label = "夜勤" if r["night"] else ("休日" if r["holiday"] and rate >= 25_000 and c not in ("メンテック", "アスカ技建") else "")
         i["lines"][(r["date"], r["site"], label, rate)][0] += 1
         if r["ot"]:
