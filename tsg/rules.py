@@ -103,7 +103,7 @@ TAXED_WORKERS = {"原", "縣"}       # 給料＋消費税10%
 # 取引先区分別 日当（昼, 夜）。None=ルール記載なし
 WAGE_TABLE = {
     "たかし": {"sankyo": (14_000, 21_000), "sano": (15_000, None), "mentec": (16_000, None), "matsuri": (14_000, 22_000)},
-    "黒澤":   {"sankyo": (16_000, None), "sano": (17_000, None), "mentec": (18_000, None), "matsuri": (None, 24_000)},
+    "黒澤":   {"sankyo": (16_000, 24_000), "sano": (17_000, None), "mentec": (18_000, None), "matsuri": (None, 24_000)},
     "中川組": {"sankyo": (17_000, None), "sano": (17_000, None), "mentec": (17_000, None), "matsuri": (17_000, 22_000)},
     "富岡":   {"sankyo": (16_000, 24_000), "sano": (17_000, 24_000), "mentec": (17_000, 24_000), "*": (None, 24_000)},
 }
