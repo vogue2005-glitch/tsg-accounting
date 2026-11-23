@@ -67,8 +67,8 @@ def bill_rule(client, site, night, holiday, notes):
         return 23_000, False, 23_000 / 8 * 1.25, "km", 0
     if client == "ユニットM":
         return 12_000, False, 0, "none", 0
-    if client == "アスカ技建":
-        return 25_000, False, 30_000 / 8 * 1.25, "km", 0
+    if client == "アスカ技建":  # 25,000＋税、休日出勤は30,000
+        return (30_000 if holiday else 25_000), False, 30_000 / 8 * 1.25, "km", 0
     if client == "中川案件":  # 単価は案件ごとに異なる → CSVの「請求単価」列で毎回指定
         notes.append(f"中川案件（{site}）: 請求単価が未確認 → 0円で計上中。単価を確認して入力すること")
         return 0, False, 30_000 / 8 * 1.25, "km", 0

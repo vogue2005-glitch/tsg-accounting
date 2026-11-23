@@ -95,7 +95,7 @@ def build_invoices(rows, notes):
             i["incl"] = incl
             if len(i["incl_seen"]) > 1:
                 notes.append(f"{c}: 税込単価と税抜単価が同じ月に混在 → 請求書を分けるか要確認")
-        label = "夜勤" if r["night"] else ("休日" if r["holiday"] and rate >= 25_000 and c not in ("メンテック", "アスカ技建") else "")
+        label = "夜勤" if r["night"] else ("休日" if r["holiday"] and rate >= 25_000 and c != "メンテック" else "")
         i["lines"][(r["date"], r["site"], label, rate)][0] += 1
         if r["ot"]:
             if ot_rate:
