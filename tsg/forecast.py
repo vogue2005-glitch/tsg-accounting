@@ -10,14 +10,16 @@ from . import generate as G
 def main(src, out, asof, notes_extra=()):
     rows, notes = G.load(src)
     inv = G.build_invoices(rows, notes)
-    d = [["取引先", "人工", "売上(税抜)", "請求額(税込)"]]
-    for c in sorted(inv, key=lambda c: -inv[c]["sales_ex"]):
+    d = [["取引先", "人工", "人工代", "交通費", "消費税", "請求額(税込)"]]
+    keys = ("labor", "nontax_total", "tax", "total")
+    for c in sorted(inv, key=lambda c: -inv[c]["total"]):
         i = inv[c]
-        d.append([G.R.OFFICIAL.get(c, c), sum(v[0] for v in i["lines"].values()),
-                  f"{int(i['sales_ex']):,}", f"{int(i['total']):,}"])
+        d.append([G.R.OFFICIAL.get(c, c), sum(v[0] for v in i["lines"].values())]
+                 + [f"{int(i[k]):,}" for k in keys])
     ex = sum(i["sales_ex"] for i in inv.values()); tt = sum(i["total"] for i in inv.values())
-    d.append(["合計見込み", sum(r[1] for r in d[1:]), f"{int(ex):,}", f"{int(tt):,}"])
-    t = Table(d, colWidths=[70 * mm, 18 * mm, 40 * mm, 40 * mm])
+    d.append(["合計見込み", sum(r[1] for r in d[1:])]
+             + [f"{int(sum(i[k] for i in inv.values())):,}" for k in keys])
+    t = Table(d, colWidths=[52 * mm, 14 * mm, 28 * mm, 25 * mm, 25 * mm, 30 * mm])
     t.setStyle(TableStyle([("FONT", (0, 0), (-1, -1), G.F, 9.5), ("GRID", (0, 0), (-1, -1), 0.4, colors.grey),
                            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#dde3ea")),
                            ("ALIGN", (1, 1), (-1, -1), "RIGHT"), ("FONT", (0, -1), (-1, -1), G.F, 11),
