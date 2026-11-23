@@ -23,9 +23,12 @@ LIST_PATH = _P(__file__).resolve().parent.parent / "data" / "協力業者一覧.
 ADDRESSES = {}
 CLIENT_LIST = set()
 OFFICIAL = {}  # 請求書の宛名（正式名称）
+LINE_BILLING = set()  # 請求をLINEで送る取引先（住所不要）
 with open(LIST_PATH, encoding="utf-8-sig") as _f:
     for _r in _csv.DictReader(_f):
         CLIENT_LIST.add(_r["取引先名"])
+        if "LINE" in _r.get("特記事項", ""):
+            LINE_BILLING.add(_r["取引先名"])
         if _r.get("正式名称"):
             OFFICIAL[_r["取引先名"]] = _r["正式名称"]
         if _r["住所"]:
@@ -111,6 +114,7 @@ WAGE_TABLE = {
 WORKER_CLIENT_WAGE = {
     ("黒澤", "源馬総合機設"): (16_000, None),
     ("たかし", "長尾工業"): (14_000, 21_000),
+    ("黒澤", "長尾工業"): (16_000, 24_000),
 }
 FLAT_WAGE = {  # 取引先によらない（昼, 夜）
     "近藤": (15_000, 22_500), "原": (18_000, 27_000),

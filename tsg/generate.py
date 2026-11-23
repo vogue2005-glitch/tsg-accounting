@@ -159,7 +159,7 @@ def build_invoices(rows, notes):
 def invoice_pdf(path, client, i, ym, inv_no, issue, due):
     doc = SimpleDocTemplate(str(path), pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm,
                             topMargin=15 * mm, bottomMargin=15 * mm)
-    addr = R.ADDRESSES.get(client, "（住所：過去スレ参照・要確認）")
+    addr = R.ADDRESSES.get(client, "" if client in R.LINE_BILLING else "（住所：過去スレ参照・要確認）")
     s = [Paragraph("請 求 書", ST["title"]), Spacer(0, 6 * mm)]
     left = [Paragraph(addr, ST["n"]), Paragraph(f"<font size=14>{R.OFFICIAL.get(client, client)}　御中</font>", ST["h"]),
             Spacer(0, 3 * mm), Paragraph(f"件名：{ym.year}年{ym.month}月分 作業代", ST["n"])]
@@ -336,7 +336,7 @@ def main(csv_path, ym_str=None):
     for c in inv:
         if c not in R.CLIENT_LIST:
             notes.append(f"取引先「{c}」が協力業者一覧に未登録 → data/協力業者一覧.csv に追加すること")
-        elif c not in R.ADDRESSES:
+        elif c not in R.ADDRESSES and c not in R.LINE_BILLING:
             notes.append(f"取引先「{c}」の住所が協力業者一覧に未登録")
     for n, (c, i) in enumerate(inv.items(), 1):
         invoice_pdf(out / f"請求書_{c}_{ym:%Y%m}.pdf", c, i, ym, f"TSG-{ym:%Y%m}-{n:02d}", issue, due)
