@@ -78,6 +78,10 @@ def bill_rule(client, site, night, holiday, notes):
         notes.append("修善寺プリン工房の請求単価が未定義 → 仮に12,000円税込で計上")
         return 12_000, True, 0, "receipt", 0
     ot = 30_000 / 8 * 1.25
+    if client == "祭工業" and "台湾" in site:  # 台湾案件 27,000（＋税）
+        if holiday or night:
+            notes.append(f"祭工業 台湾 {'夜勤' if night else '休日'}の単価未確認 → 27,000円で仮計上")
+        return 27_000, False, ot, "km", 0
     if client == "祭工業" and night:
         if "横浜" in site:
             return 25_000, False, ot, "km", 0
