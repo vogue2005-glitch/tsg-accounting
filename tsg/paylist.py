@@ -38,7 +38,7 @@ def main(actual, forecast, out, asof):
                            ("ALIGN", (2, 1), (-1, -1), "RIGHT"), ("FONT", (0, -1), (-1, -1), G.F, 11),
                            ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#e8eef7"))]))
     doc = SimpleDocTemplate(out, pagesize=landscape(A4), leftMargin=12 * mm, rightMargin=12 * mm, topMargin=12 * mm)
-    ym = ra[0]["date"]
+    ym = (ra or rf)[0]["date"]  # 実績がまだ無い月は見込みから
     body = [Paragraph(f"人件費支払一覧　{ym:%Y年%m月}", G.ST["title"]), Paragraph(f"{asof}時点", G.ST["r"]), Spacer(0, 4 * mm), t,
             Spacer(0, 4 * mm), Paragraph("・実績＝終了報告分、見込＝実績＋スケジュール（月末まで）。交通費は20円/km、ETCは木ノ下カードのため含まず。", G.ST["n"])]
     body += [Paragraph("・" + x, G.ST["n"]) for x in dict.fromkeys(nf)]
