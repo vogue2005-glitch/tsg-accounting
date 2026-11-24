@@ -133,10 +133,12 @@ def client_cat(client):
             "メンテック": "mentec", "祭工業": "matsuri"}.get(client, "*")
 
 
-def wage_rule(worker, client, night, notes):
+def wage_rule(worker, client, night, notes, site=""):
     """作業員日当を返す: (日当, 税込/外注フラグ)"""
     if worker == "木ノ下":
         return 0, False
+    if client == "祭工業" and "台湾" in site:  # 台湾案件 日当22,000（全員）
+        return 22_000, worker in NAKAGAWA_GUMI
     if client in ("修善寺プリン工房", "三田案件"):
         return 12_000, True
     if client == "アスカ技建":

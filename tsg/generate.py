@@ -211,7 +211,7 @@ def build_payroll(rows, notes):
         w = r["worker"]
         if w == "木ノ下":
             continue
-        wage, incl = R.wage_rule(w, r["client"], r["night"], notes)
+        wage, incl = R.wage_rule(w, r["client"], r["night"], notes, r["site"])
         p = pay.setdefault(w, dict(days=[], wage=0, km=0, ot=0, reimb=0))
         p["reimb"] += r["reimb"]
         trav = r["km"] * R.WAGE_KM
