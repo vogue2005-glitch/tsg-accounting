@@ -212,11 +212,15 @@ def build_payroll(rows, notes):
         if w == "木ノ下":
             continue
         wage, incl = R.wage_rule(w, r["client"], r["night"], notes)
-        p = pay.setdefault(w, dict(days=[], wage=0, km=0, ot=0, reimb=0))
+        p = pay.setdefault(w, dict(days=[], wage=0, km=0, ot=0, ot_h=0, reimb=0))
         p["reimb"] += r["reimb"]
         trav = r["km"] * R.WAGE_KM
         if r["ot"]:
-            notes.append(f"{w} {r['date']:%m/%d}: 残業{r['ot']}h → 給料側の残業単価ルールなし・未加算（要確認）")
+            if w in R.NAKAGAWA_GUMI:  # 中川組: 残業時給 = 日当÷8×1.25
+                p["ot"] += round(wage / 8 * 1.25 * r["ot"])
+                p["ot_h"] += r["ot"]
+            else:
+                notes.append(f"{w} {r['date']:%m/%d}: 残業{r['ot']}h → 給料側の残業単価ルールなし・未加算（要確認）")
         p["days"].append([f"{r['date'].month}/{r['date'].day}", r["client"], r["site"],
                           "夜" if r["night"] else "昼", wage, r["km"], trav])
         p["wage"] += wage
@@ -224,7 +228,7 @@ def build_payroll(rows, notes):
     for w, p in pay.items():
         p["tax"] = math.floor(p["wage"] * R.TAX) if w in R.TAXED_WORKERS else 0
         p["trav"] = p["km"] * R.WAGE_KM
-        p["total"] = p["wage"] + p["tax"] + p["trav"] + p["reimb"]
+        p["total"] = p["wage"] + p["ot"] + p["tax"] + p["trav"] + p["reimb"]
         p["gaichu"] = w in R.NAKAGAWA_GUMI
     return pay
 
@@ -248,6 +252,8 @@ def payroll_pdf(path, pay, ym, kinoshita_days):
                                 ("ALIGN", (4, 1), (-1, -1), "RIGHT"), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                                 ("BACKGROUND", (0, -1), (-1, -1), colors.HexColor("#f4f6f8"))]))
         sm = [["日当合計", yen(p["wage"])]]
+        if p["ot"]:
+            sm.append([f"残業代（{p['ot_h']:g}h・日当÷8×1.25）", yen(p["ot"])])
         if p["tax"]:
             sm.append(["消費税（10%）", yen(p["tax"])])
         sm.append([f"交通費（{p['km']:g}km × {R.WAGE_KM}円）", yen(p["trav"])])
@@ -269,7 +275,7 @@ def payroll_pdf(path, pay, ym, kinoshita_days):
 def summary(rows, inv, pay, notes, ym, out):
     sales_ex = sum(i["sales_ex"] for i in inv.values())
     sales_in = sum(i["total"] for i in inv.values())
-    wages = sum(p["wage"] + p["tax"] for p in pay.values())
+    wages = sum(p["wage"] + p["ot"] + p["tax"] for p in pay.values())
     trav = sum(p["trav"] for p in pay.values())
     etc = sum(r["etc"] for r in rows)  # 本人立替分も含む（原価として1回だけ計上）
     reimb = sum(p["reimb"] for p in pay.values())

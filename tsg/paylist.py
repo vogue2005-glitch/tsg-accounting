@@ -17,7 +17,7 @@ def main(actual, forecast, out, asof):
     ra, pa, na = calc(actual)
     rf, pf, nf = calc(forecast)
     names = ["木ノ下"] + sorted(set(pa) | set(pf), key=lambda w: (w in R.NAKAGAWA_GUMI, w))
-    hdr = ["作業員", "区分", "実績 日数", "実績 支払額", "見込 日数", "日当(+税)", "交通費", "立替", "見込 支払額"]
+    hdr = ["作業員", "区分", "実績 日数", "実績 支払額", "見込 日数", "日当(+残業・税)", "交通費", "立替", "見込 支払額"]
     d = [hdr]; ta = tf = 0
     for w in names:
         if w == "木ノ下":
@@ -29,7 +29,7 @@ def main(actual, forecast, out, asof):
         at = a["total"] if a else 0; ft = f["total"] if f else 0
         ta += at; tf += ft
         d.append([w if w != "中川組" else "中川組(メンバー未定)", kind, len(a["days"]) if a else 0, f"{int(at):,}",
-                  len(f["days"]) if f else 0, f"{(f['wage'] + f['tax']) if f else 0:,}",
+                  len(f["days"]) if f else 0, f"{(f['wage'] + f['ot'] + f['tax']) if f else 0:,}",
                   f"{int(f['trav']) if f else 0:,}", f"{int(f['reimb']) if f else 0:,}", f"{int(ft):,}"])
     d.append(["合計", "", "", f"{int(ta):,}", "", "", "", "", f"{int(tf):,}"])
     t = Table(d, colWidths=[42 * mm, 26 * mm, 20 * mm, 30 * mm, 20 * mm, 30 * mm, 26 * mm, 20 * mm, 32 * mm], repeatRows=1)
