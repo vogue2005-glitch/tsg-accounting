@@ -107,7 +107,7 @@ TAXED_WORKERS = {"原", "縣"}       # 給料＋消費税10%
 WAGE_TABLE = {
     "たかし": {"sankyo": (14_000, 21_000), "sano": (15_000, None), "mentec": (16_000, None), "matsuri": (14_000, 22_000)},
     "黒澤":   {"sankyo": (16_000, 24_000), "sano": (17_000, None), "mentec": (18_000, None), "matsuri": (None, 24_000)},
-    "中川組": {"sankyo": (17_000, None), "sano": (17_000, None), "mentec": (17_000, None), "matsuri": (17_000, 22_000)},
+    "中川組": {"sankyo": (17_000, 25_500), "sano": (17_000, None), "mentec": (17_000, None), "matsuri": (17_000, 22_000)},
     "富岡":   {"sankyo": (16_000, 24_000), "sano": (17_000, 24_000), "mentec": (17_000, 24_000), "*": (None, 24_000)},
 }
 # 作業員×取引先の個別単価（昼, 夜）。表より優先
@@ -129,8 +129,18 @@ def client_cat(client):
             "メンテック": "mentec", "祭工業": "matsuri"}.get(client, "*")
 
 
-def wage_rule(worker, client, night, notes):
+HOLIDAY_X15 = {"黒澤"}  # 休日出勤（昼）は日当×1.5
+
+
+def wage_rule(worker, client, night, notes, holiday=False):
     """作業員日当を返す: (日当, 税込/外注フラグ)"""
+    w, f = _wage_rule(worker, client, night, notes)
+    if holiday and not night and worker in HOLIDAY_X15 and w:
+        w = round(w * 1.5)
+    return w, f
+
+
+def _wage_rule(worker, client, night, notes):
     if worker == "木ノ下":
         return 0, False
     if client in ("修善寺プリン工房", "三田案件"):
