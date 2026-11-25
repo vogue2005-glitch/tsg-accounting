@@ -222,7 +222,7 @@ def build_payroll(rows, notes):
             else:
                 notes.append(f"{w} {r['date']:%m/%d}: 残業{r['ot']}h → 給料側の残業単価ルールなし・未加算（要確認）")
         p["days"].append([f"{r['date'].month}/{r['date'].day}", r["client"], r["site"],
-                          "夜" if r["night"] else ("休" if r["holiday"] and w in R.HOLIDAY_X15 else "昼"), wage, r["km"], trav])
+                          "夜" if r["night"] else ("休" if r["holiday"] and w in R.HOLIDAY_X15 and r["client"] not in R.NO_HOLIDAY_CLIENTS else "昼"), wage, r["km"], trav])
         p["wage"] += wage
         p["km"] += r["km"]
     for w, p in pay.items():

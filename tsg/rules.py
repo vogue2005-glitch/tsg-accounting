@@ -130,12 +130,13 @@ def client_cat(client):
 
 
 HOLIDAY_X15 = {"黒澤"}  # 休日出勤（昼）は日当×1.5
+NO_HOLIDAY_CLIENTS = {"メンテック"}  # 休日出勤の扱いなし（平日と同じ）
 
 
 def wage_rule(worker, client, night, notes, holiday=False):
     """作業員日当を返す: (日当, 税込/外注フラグ)"""
     w, f = _wage_rule(worker, client, night, notes)
-    if holiday and not night and worker in HOLIDAY_X15 and w:
+    if holiday and not night and worker in HOLIDAY_X15 and client not in NO_HOLIDAY_CLIENTS and w:
         w = round(w * 1.5)
     return w, f
 
